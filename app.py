@@ -5,8 +5,12 @@ import whisper
 from google import genai
 from dotenv import load_dotenv
 import json  # Import json module for parsing
+from flask_cors import CORS
 
 app = Flask(__name__)
+
+# Enable CORS
+CORS(app)
 
 # Ensure the upload directory exists
 UPLOAD_FOLDER = 'uploads'
@@ -43,9 +47,6 @@ def analyze_transcript_with_prompt(transcript, prompt):
 
 def analyze_sales_calls(audio_file):
     try:
-        # Debugging: Print the audio file path to ensure it is correct
-        print(f"Analyzing file: {audio_file}")
-
         # Transcribe the audio file
         result = model.transcribe(audio_file)
         transcript = result['text']
@@ -57,6 +58,7 @@ def analyze_sales_calls(audio_file):
                 1. Metrics: Provide metrics on the sales call, such as the number of questions asked, the number of objections raised, and the number of times the customer spoke.
                 2. Feedback: Provide feedback on the sales call, such as the salesperson's tone, pace, and energy level.
                 3. Recommendations: Provide recommendations on how the salesperson can improve, such as asking more open-ended questions, active listening, and handling objections effectively.
+        Use **bold** for emphasis and *italics* for subtle emphasis.
         Return data in this format:
                 {
                 metrics: [
@@ -84,7 +86,7 @@ def analyze_sales_calls(audio_file):
                 overallScore: 78,
                 recommendations: [
                   "Use more specific examples when addressing objections",
-                  "Implement the Feel, Felt, Found framework for handling objections",
+                  "Implement the *Feel*, *Felt*, *Found* framework for handling objections",
                   "Ask more probing questions to uncover deeper pain points",
                   "Practice assumptive closing techniques",
                 ]
@@ -106,13 +108,16 @@ def analyze_sales_calls(audio_file):
         print(f"Error analyzing sales calls: {e}")
         return None
 
+
 @app.route('/analyze', methods=['POST'])
 def analyze():
     if 'file' not in request.files:
         return jsonify({"error": "No file part"}), 400
     file = request.files['file']
+
     if file.filename == '':
         return jsonify({"error": "No selected file"}), 400
+
     if file and allowed_file(file.filename):
         filename = secure_filename(file.filename)
         filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
@@ -122,11 +127,8 @@ def analyze():
         abs_filepath = os.path.abspath(filepath)
         abs_filepath = abs_filepath.replace("\\", "/")
 
-        # Debugging: Print the absolute file path to ensure it is correct
-        print(f"File saved to: {abs_filepath}")
-
         analysis_result = analyze_sales_calls(abs_filepath)
-        print(analysis_result)
+
         if analysis_result:
             return jsonify(analysis_result), 200
         else:
